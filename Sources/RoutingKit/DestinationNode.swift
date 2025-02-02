@@ -19,6 +19,7 @@ internal class DestinationNode: Identifiable, ObservableObject {
     let destination: Destination?
     let onDismiss: (() -> Void)?
     let delegate: DestinationNodePopProtocol?
+    let transition: TransitionType?
     
     /// nil for root, always present for others
     let previous: DestinationNode?
@@ -53,7 +54,8 @@ internal class DestinationNode: Identifiable, ObservableObject {
         path: [Destination]? = nil,
         sheetItem: Destination? = nil,
         alertItem: (any AlertDestinationProtocol)? = nil,
-        popDelegate: DestinationNodePopProtocol
+        popDelegate: DestinationNodePopProtocol,
+        transition: TransitionType? = nil
     ) {
         self.destination = destination
         self.onDismiss = onDismiss
@@ -62,6 +64,7 @@ internal class DestinationNode: Identifiable, ObservableObject {
         self.sheetItem = sheetItem
         self.alertItem = alertItem
         self.delegate = popDelegate
+        self.transition = transition
     }
     
     // Root init
@@ -77,6 +80,7 @@ internal class DestinationNode: Identifiable, ObservableObject {
         self.path = path
         self.sheetItem = nil
         self.delegate = popDelegate
+        self.transition = nil
     }
     
     static func root(

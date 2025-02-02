@@ -10,9 +10,31 @@ import RoutingKit
 
 struct Page1: View {
     
+    @Namespace var zoomTransitionNamespace
+    
     var body: some View {
         VStack {
             Text("Page 1")
+            
+            Spacer()
+            
+            Button {
+                router.sheet(
+                    to: .sheet1,
+                    transition: .zoom(
+                        sourceID: "ZoomId",
+                        namespace: zoomTransitionNamespace
+                    )
+                )
+            } label: {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.white)
+                    .frame(height: 50)
+                    .overlay { Text("Zoom Transition") }
+                    .foregroundStyle(.black)
+                    .padding(.horizontal)
+                    .matchedTransitionSource(id: "ZoomId", in: zoomTransitionNamespace)
+            }
             
             Spacer()
             

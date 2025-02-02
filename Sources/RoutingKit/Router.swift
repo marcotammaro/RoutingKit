@@ -7,6 +7,95 @@
 
 import SwiftUI
 
+// MARK: Public interface
+
+public extension Router {
+    
+    /// Navigate to a new `Destination` with `NavigationType` mode
+    /// - Parameters:
+    ///     - type:  how the navigation should be displayed
+    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    public func navigate(to destination: Destination, type: NavigationType, onDismiss: (() -> Void)? = nil) {
+        switch type {
+        case .push:
+            self.push(to: destination, onDismiss: onDismiss)
+        case .sheet:
+            self.sheet(to: destination, onDismiss: onDismiss)
+        }
+    }
+    
+    /// Navigate to a new `Destination` with `NavigationType` mode
+    /// - Parameters:
+    ///     - type:  how the navigation should be displayed
+    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    @available(iOS 18.0, *)
+    public func navigate(to destination: Destination, type: NavigationType, transition: TransitionType?, onDismiss: (() -> Void)? = nil) {
+        switch type {
+        case .push:
+            self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
+        case .sheet:
+            self.addSheetNode(to: destination, transition: transition, onDismiss: onDismiss)
+        }
+    }
+    
+    /// Navigate horizontally (through a NavigationStack) to a new `Destination`
+    /// - Parameters:
+    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    public func push(to destination: Destination, onDismiss: (() -> Void)? = nil) {
+        self.addPushNode(to: destination, transition: nil, onDismiss: onDismiss)
+    }
+    
+    /// Navigate horizontally (through a NavigationStack) to a new `Destination`
+    /// - Parameters:
+    ///     - transition:  sets the navigation transition style for this view.
+    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    @available(iOS 18.0, *)
+    public func push(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
+        self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
+    }
+    
+    /// Navigate vertically (through sheets) to a new `Destination`
+    /// - Parameters:
+    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    public func sheet(to destination: Destination, onDismiss: (() -> Void)? = nil) {
+        self.addSheetNode(to: destination, transition: nil, onDismiss: onDismiss)
+    }
+    
+    /// Navigate vertically (through sheets) to a new `Destination`
+    /// - Parameters:
+    ///     - onDismiss: an optional callback fired when the presented destination will be dismissed
+    @available(iOS 18.0, *)
+    public func sheet(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
+        self.addSheetNode(to: destination, transition: transition, onDismiss: onDismiss)
+    }
+    
+    /// Displays an alert with the given title, optional message, and actions.
+    /// - Parameters:
+    ///     - title: The title of the alert.
+    ///     - message: An optional message to display in the alert.
+    ///     - actions: An optional array of `TextAlertAction` representing the available actions.
+    public func showAlert(title: String, message: String? = nil, actions: [TextAlertAction]? = nil) {
+        let alert = TextAlert(title: title, message: message, actions: actions)
+        self.showAlert(alert)
+    }
+    
+    /// Displays an alert using a custom alert conforming to `AlertDestinationProtocol`.
+    /// - Parameter alert: An alert conforming to `AlertDestinationProtocol` to be displayed.
+    public func showAlert(_ alert: some AlertDestinationProtocol) {
+        currentNode.alertItem = alert
+        currentNode.reloadView()
+    }
+    
+    /// Dismisses the current view with an optional dismiss option.
+    /// - Parameter option: The `DismissOptions` that defines how the view should be dismissed.
+    ///   Defaults to `.toPreviousView`.
+    public func dismiss(option: DismissOptions = .toPreviousView) {
+        self.removeNode(option: option)
+    }
+}
+
+// MARK: Private implementation
+
 @MainActor
 public class Router: DestinationNodePopProtocol {
     
@@ -31,24 +120,7 @@ public class Router: DestinationNodePopProtocol {
     private var presentingNode: DestinationNode?
     private var didRequestDismissOption: DismissOptions?
     
-    /// Navigate to a new `Destination` with `NavigationType` mode
-    /// - Parameters:
-    ///     - type:  how the navigation should be displayed
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    public func navigate(to destination: Destination, type: NavigationType, onDismiss: (() -> Void)? = nil) {
-        switch type {
-        case .push:
-            self.push(to: destination, onDismiss: onDismiss)
-        case .sheet:
-            self.sheet(to: destination, onDismiss: onDismiss)
-        }
-    }
-    
-    /// Navigate horizontally (through a NavigationStack) to a new `Destination`
-    /// - Parameters:
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    public func push(to destination: Destination, onDismiss: (() -> Void)? = nil) {
-        
+    private func addPushNode(to destination: Destination, transition: TransitionType?, onDismiss: (() -> Void)?) {
         // Inserting the destination into the nearest node that has a path
         let pathNode = insertDestinationIntoPathNode(destination)
         pathNode.reloadView()
@@ -57,17 +129,14 @@ public class Router: DestinationNodePopProtocol {
             destination: destination,
             onDismiss: onDismiss,
             previous: currentNode,
-            popDelegate: self
+            popDelegate: self,
+            transition: transition
         )
         
         currentNode = presentingNode!
-        
     }
     
-    /// Navigate vertically (through sheets) to a new `Destination`
-    /// - Parameters:
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    public func sheet(to destination: Destination, onDismiss: (() -> Void)? = nil) {
+    private func addSheetNode(to destination: Destination, transition: TransitionType?, onDismiss: (() -> Void)?) {
         currentNode.sheetItem = destination
         currentNode.reloadView()
         
@@ -77,24 +146,14 @@ public class Router: DestinationNodePopProtocol {
             onDismiss: onDismiss,
             previous: currentNode,
             path: [],
-            popDelegate: self
+            popDelegate: self,
+            transition: transition
         )
         
         currentNode = presentingNode!
-        
     }
     
-    public func showAlert(title: String, message: String? = nil, actions: [TextAlertAction]? = nil) {
-        let alert = TextAlert(title: title, message: message, actions: actions)
-        self.showAlert(alert)
-    }
-    
-    public func showAlert(_ alert: some AlertDestinationProtocol) {
-        currentNode.alertItem = alert
-        currentNode.reloadView()
-    }
-    
-    public func dismiss(option: DismissOptions = .toPreviousView) {
+    private func removeNode(option: DismissOptions) {
         
         self.didRequestDismissOption = option
         
@@ -127,7 +186,7 @@ public class Router: DestinationNodePopProtocol {
         }
     }
     
-    func onPathViewPop() {
+    internal func onPathViewPop() {
         
         let currentNode = self.currentNode
         let node = pathNode()
@@ -143,7 +202,7 @@ public class Router: DestinationNodePopProtocol {
         
     }
     
-    func onSheetItemPop() {
+    internal func onSheetItemPop() {
         
         let currentNode = self.currentNode
         let pathNode = pathNode()
@@ -166,14 +225,28 @@ public class Router: DestinationNodePopProtocol {
     }
     
     @MainActor
-    func destination(destination: Destination) -> some View {
+    internal func destination(destination: Destination) -> some View {
         
         guard let model = self.presentingNode
         else { fatalError("Navigating to a view not requested") }
         
-        return RoutableView(router: self, model: model) {
+        let view = RoutableView(router: self, model: model) {
             AnyView(destination.content())
         }
+        
+        if #available(iOS 18.0, *) {
+            return Group {
+                switch model.transition {
+                case .zoom(let sourceID, let namespace):
+                    view.navigationTransition(.zoom(sourceID: sourceID, in: namespace))
+                default:
+                    view
+                }
+            }
+        }
+        
+        return view
+
     }
     
 }
