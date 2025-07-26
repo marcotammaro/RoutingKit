@@ -234,6 +234,8 @@ public class Router: DestinationNodePopProtocol {
             AnyView(destination.content())
         }
         
+        // on macOS zoom transition is unavailable
+        #if os(iOS)
         if #available(iOS 18.0, *) {
             return Group {
                 switch model.transition {
@@ -244,6 +246,7 @@ public class Router: DestinationNodePopProtocol {
                 }
             }
         }
+        #endif
         
         return view
 
