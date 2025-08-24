@@ -15,7 +15,7 @@ public extension Router {
     /// - Parameters:
     ///     - type:  how the navigation should be displayed
     ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    public func navigate(to destination: Destination, type: NavigationType, onDismiss: (() -> Void)? = nil) {
+    func navigate(to destination: Destination, type: NavigationType, onDismiss: (() -> Void)? = nil) {
         switch type {
         case .push:
             self.push(to: destination, onDismiss: onDismiss)
@@ -29,7 +29,8 @@ public extension Router {
     ///     - type:  how the navigation should be displayed
     ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
     @available(iOS 18.0, *)
-    public func navigate(to destination: Destination, type: NavigationType, transition: TransitionType?, onDismiss: (() -> Void)? = nil) {
+    @available(macOS, unavailable)
+    func navigate(to destination: Destination, type: NavigationType, transition: TransitionType?, onDismiss: (() -> Void)? = nil) {
         switch type {
         case .push:
             self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
@@ -41,7 +42,7 @@ public extension Router {
     /// Navigate horizontally (through a NavigationStack) to a new `Destination`
     /// - Parameters:
     ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    public func push(to destination: Destination, onDismiss: (() -> Void)? = nil) {
+    func push(to destination: Destination, onDismiss: (() -> Void)? = nil) {
         self.addPushNode(to: destination, transition: nil, onDismiss: onDismiss)
     }
     
@@ -50,14 +51,15 @@ public extension Router {
     ///     - transition:  sets the navigation transition style for this view.
     ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
     @available(iOS 18.0, *)
-    public func push(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
+    @available(macOS, unavailable)
+    func push(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
         self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
     }
     
     /// Navigate vertically (through sheets) to a new `Destination`
     /// - Parameters:
     ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    public func sheet(to destination: Destination, onDismiss: (() -> Void)? = nil) {
+    func sheet(to destination: Destination, onDismiss: (() -> Void)? = nil) {
         self.addSheetNode(to: destination, transition: nil, onDismiss: onDismiss)
     }
     
@@ -65,7 +67,8 @@ public extension Router {
     /// - Parameters:
     ///     - onDismiss: an optional callback fired when the presented destination will be dismissed
     @available(iOS 18.0, *)
-    public func sheet(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
+    @available(macOS, unavailable)
+    func sheet(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
         self.addSheetNode(to: destination, transition: transition, onDismiss: onDismiss)
     }
     
@@ -74,14 +77,14 @@ public extension Router {
     ///     - title: The title of the alert.
     ///     - message: An optional message to display in the alert.
     ///     - actions: An optional array of `TextAlertAction` representing the available actions.
-    public func showAlert(title: String, message: String? = nil, actions: [TextAlertAction]? = nil) {
+    func showAlert(title: String, message: String? = nil, actions: [TextAlertAction]? = nil) {
         let alert = TextAlert(title: title, message: message, actions: actions)
         self.showAlert(alert)
     }
     
     /// Displays an alert using a custom alert conforming to `AlertDestinationProtocol`.
     /// - Parameter alert: An alert conforming to `AlertDestinationProtocol` to be displayed.
-    public func showAlert(_ alert: some AlertDestinationProtocol) {
+    func showAlert(_ alert: some AlertDestinationProtocol) {
         currentNode.alertItem = alert
         currentNode.reloadView()
     }
@@ -89,7 +92,7 @@ public extension Router {
     /// Dismisses the current view with an optional dismiss option.
     /// - Parameter option: The `DismissOptions` that defines how the view should be dismissed.
     ///   Defaults to `.toPreviousView`.
-    public func dismiss(option: DismissOptions = .toPreviousView) {
+    func dismiss(option: DismissOptions = .toPreviousView) {
         self.removeNode(option: option)
     }
 }
