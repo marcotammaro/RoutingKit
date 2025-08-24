@@ -12,6 +12,7 @@ RoutingKit is a lightweight and modular Swift library designed to simplify navig
 - **Sheet navigation**: Present and manage modal views (sheets).
 - **Alert handling**: Display and manage SwiftUI alerts with actions and custom views.
 - **Custom dismiss options**: Flexible dismissal options for views, including navigating back to root or specific levels.
+- **Navigation Transition**: Zoom transition available on iOS and iPadOS platform.
 
 ## Installation
 
