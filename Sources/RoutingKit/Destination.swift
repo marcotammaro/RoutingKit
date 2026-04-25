@@ -7,11 +7,11 @@
 
 import SwiftUI
 
-public struct Destination: Identifiable, Hashable {
+public struct Destination: Identifiable, Hashable, Sendable {
     public let id = UUID()
-    public let content: () -> any View
-    
-    public init(content: @escaping () -> any View) {
+    public let content: @MainActor () -> any View
+
+    public init(content: @escaping @MainActor () -> any View) {
         self.content = content
     }
     

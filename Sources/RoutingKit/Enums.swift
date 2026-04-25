@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public enum DismissOptions {
+public enum DismissOptions: Sendable {
     /// Dismiss only the top view, wherever it is an alert, a sheet or a page
     case toPreviousView
     /// Dismiss everything until the root view has been reached
@@ -17,7 +17,7 @@ public enum DismissOptions {
     case toNavigationBegin
 }
 
-public enum NavigationType {
+public enum NavigationType: Sendable {
     /// Horizontal navigation with a navigation stack
     case push
     /// Vertical navigation with sheet item

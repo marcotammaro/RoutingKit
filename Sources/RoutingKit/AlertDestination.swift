@@ -21,13 +21,14 @@ public protocol AlertDestinationProtocol<M, A> where M: View, A: View {
 
 // `AlertDestinationProtocol` Protocol Implementations
 
-public struct TextAlertAction: Identifiable, Hashable {
+public struct TextAlertAction: Identifiable, Hashable, Sendable {
     public let id = UUID()
     public let title: String
     public let role: ButtonRole
-    public let action: () -> Void
+    /// Always invoked on the MainActor (inside a SwiftUI Button action).
+    public let action: @MainActor () -> Void
     
-    public init(title: String, role: ButtonRole, action: @escaping () -> Void) {
+    public init(title: String, role: ButtonRole, action: @escaping @MainActor () -> Void) {
         self.title = title
         self.role = role
         self.action = action
@@ -43,7 +44,7 @@ public struct TextAlertAction: Identifiable, Hashable {
 }
 
 /// A `AlertDestinationProtocol` implementation where title, message and actions are text based (typical alert use-case)
-public struct TextAlert: AlertDestinationProtocol {
+public struct TextAlert: AlertDestinationProtocol, Sendable {
     
     private let alertTitle: String
     private let alertMessage: String

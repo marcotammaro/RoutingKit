@@ -17,7 +17,8 @@ internal protocol DestinationNodePopProtocol {
 internal class DestinationNode: Identifiable, ObservableObject {
     
     let destination: Destination?
-    let onDismiss: (() -> Void)?
+    /// Always called on the MainActor (triggered from `onPathViewPop` / `onSheetItemPop`).
+    let onDismiss: (@MainActor () -> Void)?
     let delegate: DestinationNodePopProtocol?
     let transition: TransitionType?
     
@@ -52,7 +53,7 @@ internal class DestinationNode: Identifiable, ObservableObject {
     
     init(
         destination: Destination,
-        onDismiss: (() -> Void)?,
+        onDismiss: (@MainActor () -> Void)?,
         previous: DestinationNode? = nil,
         path: [Destination]? = nil,
         sheetItem: Destination? = nil,

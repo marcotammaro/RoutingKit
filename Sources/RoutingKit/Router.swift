@@ -7,95 +7,139 @@
 
 import SwiftUI
 
-// MARK: Public interface
+// All public navigation methods are `nonisolated` so they can be called from
+// any concurrency context (e.g. a non-@MainActor ViewModel or an actor).
+// Each one immediately schedules the real work on the MainActor via a Task;
+// the call site never needs to be on the main thread.
+//
+// Methods that involve `TransitionType` stay `@MainActor` because
+// `TransitionType.zoom` carries a `Namespace.ID`, a SwiftUI type that is
+// only available inside a View body (which is already @MainActor).
+//
+// `showAlert(_:)` with a custom `AlertDestinationProtocol` stays `@MainActor`
+// because arbitrary protocol conformances are not guaranteed to be `Sendable`.
 
 public extension Router {
     
-    /// Navigate to a new `Destination` with `NavigationType` mode
-    /// - Parameters:
-    ///     - type:  how the navigation should be displayed
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    func navigate(to destination: Destination, type: NavigationType, onDismiss: (() -> Void)? = nil) {
-        switch type {
-        case .push:
-            self.push(to: destination, onDismiss: onDismiss)
-        case .sheet:
-            self.sheet(to: destination, onDismiss: onDismiss)
+    // MARK: navigate
+    
+    /// Navigate to a new `Destination` with `NavigationType` mode.
+    /// Can be called from any concurrency context.
+    nonisolated func navigate(
+        to destination: Destination,
+        type: NavigationType,
+        onDismiss: (@MainActor () -> Void)? = nil
+    ) {
+        Task { @MainActor [weak self] in
+            switch type {
+            case .push:  self?.addPushNode(to: destination, transition: nil, onDismiss: onDismiss)
+            case .sheet: self?.addSheetNode(to: destination, transition: nil, onDismiss: onDismiss)
+            }
         }
     }
     
-    /// Navigate to a new `Destination` with `NavigationType` mode
-    /// - Parameters:
-    ///     - type:  how the navigation should be displayed
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    /// Navigate to a new `Destination` with a custom transition.
+    /// Must be called from a `@MainActor` context (requires `Namespace.ID`).
     @available(iOS 18.0, *)
     @available(macOS, unavailable)
-    func navigate(to destination: Destination, type: NavigationType, transition: TransitionType?, onDismiss: (() -> Void)? = nil) {
+    func navigate(
+        to destination: Destination,
+        type: NavigationType,
+        transition: TransitionType?,
+        onDismiss: (@MainActor () -> Void)? = nil
+    ) {
         switch type {
-        case .push:
-            self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
-        case .sheet:
-            self.addSheetNode(to: destination, transition: transition, onDismiss: onDismiss)
+        case .push:  self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
+        case .sheet: self.addSheetNode(to: destination, transition: transition, onDismiss: onDismiss)
         }
     }
     
-    /// Navigate horizontally (through a NavigationStack) to a new `Destination`
-    /// - Parameters:
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    func push(to destination: Destination, onDismiss: (() -> Void)? = nil) {
-        self.addPushNode(to: destination, transition: nil, onDismiss: onDismiss)
+    // MARK: push
+    
+    /// Navigate horizontally (push) to a new `Destination`.
+    /// Can be called from any concurrency context.
+    nonisolated func push(
+        to destination: Destination,
+        onDismiss: (@MainActor () -> Void)? = nil
+    ) {
+        Task { @MainActor [weak self] in
+            self?.addPushNode(to: destination, transition: nil, onDismiss: onDismiss)
+        }
     }
     
-    /// Navigate horizontally (through a NavigationStack) to a new `Destination`
-    /// - Parameters:
-    ///     - transition:  sets the navigation transition style for this view.
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
+    /// Navigate horizontally (push) with a custom transition.
+    /// Must be called from a `@MainActor` context (requires `Namespace.ID`).
     @available(iOS 18.0, *)
     @available(macOS, unavailable)
-    func push(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
+    func push(
+        to destination: Destination,
+        transition: TransitionType,
+        onDismiss: (@MainActor () -> Void)? = nil
+    ) {
         self.addPushNode(to: destination, transition: transition, onDismiss: onDismiss)
     }
     
-    /// Navigate vertically (through sheets) to a new `Destination`
-    /// - Parameters:
-    ///     - onDismiss:  an optional callback fired when the presented destination will be dismissed
-    func sheet(to destination: Destination, onDismiss: (() -> Void)? = nil) {
-        self.addSheetNode(to: destination, transition: nil, onDismiss: onDismiss)
+    // MARK: sheet
+    
+    /// Navigate vertically (sheet) to a new `Destination`.
+    /// Can be called from any concurrency context.
+    nonisolated func sheet(
+        to destination: Destination,
+        onDismiss: (@MainActor () -> Void)? = nil
+    ) {
+        Task { @MainActor [weak self] in
+            self?.addSheetNode(to: destination, transition: nil, onDismiss: onDismiss)
+        }
     }
     
-    /// Navigate vertically (through sheets) to a new `Destination`
-    /// - Parameters:
-    ///     - onDismiss: an optional callback fired when the presented destination will be dismissed
+    /// Navigate vertically (sheet) with a custom transition.
+    /// Must be called from a `@MainActor` context (requires `Namespace.ID`).
     @available(iOS 18.0, *)
     @available(macOS, unavailable)
-    func sheet(to destination: Destination, transition: TransitionType, onDismiss: (() -> Void)? = nil) {
+    func sheet(
+        to destination: Destination,
+        transition: TransitionType,
+        onDismiss: (@MainActor () -> Void)? = nil
+    ) {
         self.addSheetNode(to: destination, transition: transition, onDismiss: onDismiss)
     }
     
-    /// Displays an alert with the given title, optional message, and actions.
-    /// - Parameters:
-    ///     - title: The title of the alert.
-    ///     - message: An optional message to display in the alert.
-    ///     - actions: An optional array of `TextAlertAction` representing the available actions.
-    func showAlert(title: String, message: String? = nil, actions: [TextAlertAction]? = nil) {
+    // MARK: alerts
+    
+    /// Show a text-based alert.
+    /// Can be called from any concurrency context.
+    nonisolated func showAlert(
+        title: String,
+        message: String? = nil,
+        actions: [TextAlertAction]? = nil
+    ) {
+        // Build the Sendable TextAlert here, outside the task, so nothing
+        // non-Sendable needs to cross the concurrency boundary inside the closure.
         let alert = TextAlert(title: title, message: message, actions: actions)
-        self.showAlert(alert)
+        Task { @MainActor [weak self] in
+            self?.showAlert(alert)
+        }
     }
     
-    /// Displays an alert using a custom alert conforming to `AlertDestinationProtocol`.
-    /// - Parameter alert: An alert conforming to `AlertDestinationProtocol` to be displayed.
+    /// Show a custom alert conforming to `AlertDestinationProtocol`.
+    /// Must be called from a `@MainActor` context because arbitrary
+    /// `AlertDestinationProtocol` conformances are not `Sendable`.
     func showAlert(_ alert: some AlertDestinationProtocol) {
         currentNode.alertItem = alert
         currentNode.reloadView()
     }
     
-    /// Dismisses the current view with an optional dismiss option.
-    /// - Parameter option: The `DismissOptions` that defines how the view should be dismissed.
-    ///   Defaults to `.toPreviousView`.
-    func dismiss(option: DismissOptions = .toPreviousView) {
-        self.removeNode(option: option)
+    // MARK: dismiss
+    
+    /// Dismiss the current view.
+    /// Can be called from any concurrency context.
+    nonisolated func dismiss(option: DismissOptions = .toPreviousView) {
+        Task { @MainActor [weak self] in
+            self?.removeNode(option: option)
+        }
     }
 }
+
 
 // MARK: Private implementation
 
@@ -133,7 +177,7 @@ public class Router: DestinationNodePopProtocol {
         return false
     }
     
-    private func addPushNode(to destination: Destination, transition: TransitionType?, onDismiss: (() -> Void)?) {
+    private func addPushNode(to destination: Destination, transition: TransitionType?, onDismiss: (@MainActor () -> Void)?) {
         // Inserting the destination into the nearest node that has a path
         let pathNode = pathNode()
         pathNode.path?.append(destination)
@@ -150,7 +194,7 @@ public class Router: DestinationNodePopProtocol {
         currentNode = presentingNode!
     }
     
-    private func addSheetNode(to destination: Destination, transition: TransitionType?, onDismiss: (() -> Void)?) {
+    private func addSheetNode(to destination: Destination, transition: TransitionType?, onDismiss: (@MainActor () -> Void)?) {
         
         guard !isAnyNodeDismissingSheet() else { return }
         
