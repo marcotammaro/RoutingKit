@@ -34,6 +34,9 @@ internal class DestinationNode: Identifiable, ObservableObject {
         }
     }
     
+    /// true if the showing sheet started the dismissing animation
+    var isDismissingSheet: Bool = false
+    
     /// present if the view show a sheet
     var sheetItem: Destination? {
         didSet {

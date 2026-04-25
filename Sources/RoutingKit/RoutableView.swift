@@ -27,7 +27,7 @@ internal struct RoutableView<Content: View>: View {
                 view()
                     .navigationDestination(
                         for: Destination.self,
-                        destination: router.destination
+                        destination: router.view
                     )
             }
         } else {
@@ -47,7 +47,19 @@ internal struct RoutableView<Content: View>: View {
             .id(model.destination?.id)
             .sheet(
                 item: $model.sheetItem,
-                content: router.destination
+                content: { item in
+                    router
+                        .view(for: item)
+                        .presentationControllerDelegate(
+                            onWillDismiss: {
+                                model.isDismissingSheet = true
+                            },
+                            onDidDismiss: {
+                                model.sheetItem = nil
+                                model.isDismissingSheet = false
+                            }
+                        )
+                }
             )
             .alert(
                 model.alertItem?.title() ?? "",

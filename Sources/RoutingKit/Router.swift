@@ -107,25 +107,36 @@ public class Router: DestinationNodePopProtocol {
         self.currentNode = .root(popDelegate: self)
     }
     
-    internal func root(node: DestinationNode? = nil) -> DestinationNode {
-        let node = node ?? currentNode
-        if node.previous == nil { return node }
-        return root(node: node.previous)
-    }
-    
-    private func pathNode(node: DestinationNode? = nil) -> DestinationNode {
-        let node = node ?? currentNode
-        if node.path != nil { return node }
-        return pathNode(node: node.previous)
-    }
-    
     private var currentNode: DestinationNode
     private var presentingNode: DestinationNode?
     private var didRequestDismissOption: DismissOptions?
     
+    internal func root(of node: DestinationNode? = nil) -> DestinationNode {
+        let node = node ?? currentNode
+        if node.previous == nil { return node }
+        return root(of: node.previous)
+    }
+    
+    private func pathNode(of node: DestinationNode? = nil) -> DestinationNode {
+        let node = node ?? currentNode
+        if node.path != nil { return node }
+        return pathNode(of: node.previous)
+    }
+    
+    /// Returns true if *any* node in the chain is currently mid-dismiss by checking *presenting* node (parent)
+    private func isAnyNodeDismissingSheet() -> Bool {
+        var node: DestinationNode? = currentNode
+        while let n = node {
+            if n.isDismissingSheet { return true }
+            node = n.previous
+        }
+        return false
+    }
+    
     private func addPushNode(to destination: Destination, transition: TransitionType?, onDismiss: (() -> Void)?) {
         // Inserting the destination into the nearest node that has a path
-        let pathNode = insertDestinationIntoPathNode(destination)
+        let pathNode = pathNode()
+        pathNode.path?.append(destination)
         pathNode.reloadView()
         
         presentingNode = DestinationNode(
@@ -140,6 +151,9 @@ public class Router: DestinationNodePopProtocol {
     }
     
     private func addSheetNode(to destination: Destination, transition: TransitionType?, onDismiss: (() -> Void)?) {
+        
+        guard !isAnyNodeDismissingSheet() else { return }
+        
         currentNode.sheetItem = destination
         currentNode.reloadView()
         
@@ -218,17 +232,10 @@ public class Router: DestinationNodePopProtocol {
         if let didRequestDismissOption, didRequestDismissOption != .toPreviousView {
             self.dismiss(option: didRequestDismissOption)
         }
-        
-    }
-    
-    private func insertDestinationIntoPathNode(_ destination: Destination) -> DestinationNode {
-        let node = pathNode()
-        node.path!.append(destination)
-        return node
     }
     
     @MainActor
-    internal func destination(destination: Destination) -> some View {
+    internal func view(for destination: Destination) -> some View {
         
         guard let model = self.presentingNode
         else { fatalError("Navigating to a view not requested") }
